@@ -1,0 +1,1 @@
+La app lee la cabecera Date de este archivo para verificar la hora.

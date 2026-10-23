@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Cámara Evidencias</title>
+  <meta name="theme-color" content="#000000">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Evidencias">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="stylesheet" href="styles.css">
+  <script src="vendor/msal-browser.min.js"></script>
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <span id="net" class="chip">…</span>
+    <span id="gps" class="chip">GPS …</span>
+    <span id="clock" class="chip">Hora …</span>
+    <button id="account" class="chip chip-btn" type="button">…</button>
+  </header>
+
+  <main class="viewer">
+    <video id="viewfinder" playsinline muted autoplay></video>
+    <div id="flash" class="flash"></div>
+    <div id="cameraError" class="overlay" hidden>
+      <p id="cameraErrorText"></p>
+      <button id="retryCamera" class="btn" type="button">Activar cámara</button>
+    </div>
+    <div id="banner" class="banner" hidden></div>
+  </main>
+
+  <footer class="controls">
+    <button id="openGallery" class="gallery-btn" type="button" aria-label="Ver fotos">
+      <img id="lastThumb" alt="">
+      <span id="pendingBadge" class="badge" hidden>0</span>
+    </button>
+    <button id="shutter" class="shutter" type="button" aria-label="Tomar foto"></button>
+    <button id="torch" class="round-btn" type="button" aria-label="Linterna" hidden>⚡</button>
+  </footer>
+
+  <section id="gallery" class="gallery" hidden>
+    <header class="gallery-head">
+      <button id="closeGallery" class="btn btn-ghost" type="button">‹ Cámara</button>
+      <strong>Fotos</strong>
+      <button id="syncNow" class="btn" type="button">Subir ahora</button>
+    </header>
+    <p id="gallerySummary" class="summary"></p>
+    <ul id="list" class="list"></ul>
+  </section>
+
+  <div id="toast" class="toast" hidden></div>
+</body>
+</html>
