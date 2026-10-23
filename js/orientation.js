@@ -5,6 +5,9 @@ const IOS =
   (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 
 let lastAngle = null; // 0, 90, 180 o 270: giro antihorario respecto al vertical
+const NEEDS_PERMISSION =
+  typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.requestPermission === "function";
+let permissionAnswered = false;
 
 function onMotion(e) {
   const g = e.accelerationIncludingGravity;
@@ -23,14 +26,31 @@ export function startOrientation() {
   window.addEventListener("devicemotion", onMotion);
 }
 
-// iPhone exige pedir permiso al sensor dentro de un toque del usuario.
+// iPhone exige pedir permiso al sensor desde un toque completo (click), no al
+// empezar a tocar. Si se llama fuera de un toque falla y se reintenta en el siguiente.
 export async function requestOrientationPermission() {
-  if (typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.requestPermission === "function") {
-    try {
-      await DeviceMotionEvent.requestPermission();
-    } catch {
-      // Sin permiso se usa la orientación de la pantalla.
-    }
+  if (!NEEDS_PERMISSION || permissionAnswered) return;
+  try {
+    await DeviceMotionEvent.requestPermission();
+    permissionAnswered = true;
+  } catch {
+    // No venía de un toque: se volverá a pedir.
+  }
+}
+
+export function permissionPending() {
+  return NEEDS_PERMISSION && !permissionAnswered;
+}
+
+export function hasReading() {
+  return lastAngle !== null;
+}
+
+// Espera a la primera lectura del sensor, como máximo ms milisegundos.
+export async function waitForReading(ms) {
+  const end = performance.now() + ms;
+  while (lastAngle === null && performance.now() < end) {
+    await new Promise((r) => setTimeout(r, 50));
   }
 }
 
@@ -42,5 +62,5 @@ function screenAngle() {
 // Grados que hay que girar la imagen en sentido antihorario para que quede derecha.
 export function captureRotation() {
   if (lastAngle === null) return { rotation: 0, source: "pantalla" };
-  return { rotation: (lastAngle - screenAngle() + 360) % 360, source: "sensor" };
+  return { rotation: (lastAngle - screenAngle() + 360) % 360, source: "sensor", phoneAngle: lastAngle };
 }

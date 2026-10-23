@@ -7,9 +7,16 @@ import { putPhoto, listPhotos } from "./db.js";
 import { authEnabled, initAuth, currentUser, login, logout } from "./auth.js";
 import { folderLabel } from "./graph.js";
 import { syncAll } from "./sync.js";
-import { startOrientation, requestOrientationPermission, captureRotation } from "./orientation.js";
+import {
+  startOrientation,
+  requestOrientationPermission,
+  permissionPending,
+  hasReading,
+  waitForReading,
+  captureRotation,
+} from "./orientation.js";
 
-const APP_VERSION = "0.2.0";
+const APP_VERSION = "0.3.0";
 const $ = (id) => document.getElementById(id);
 const video = $("viewfinder");
 
@@ -67,6 +74,15 @@ function updateGps() {
 function updateClock() {
   const t = clock.now();
   setChip($("clock"), t.verified ? "Hora verificada" : "Hora no verificada", t.verified ? "ok" : "warn");
+}
+
+function updateOrientation() {
+  const el = $("orient");
+  if (permissionPending()) return setChip(el, "Giro: toca la pantalla", "warn");
+  if (!hasReading()) return setChip(el, "Giro: sin sensor", "warn");
+  const { rotation, phoneAngle } = captureRotation();
+  const pose = phoneAngle === 0 ? "vertical" : phoneAngle === 180 ? "invertido" : "horizontal";
+  setChip(el, `Teléfono ${pose} · giro ${rotation}°`, "ok");
 }
 
 function updateAccount() {
@@ -133,6 +149,11 @@ async function capture() {
   if (capturing) return;
   capturing = true;
   $("shutter").disabled = true;
+  // Primera foto en iPhone: se pide el permiso del sensor dentro de este toque.
+  if (permissionPending()) {
+    await requestOrientationPermission();
+    await waitForReading(700);
+  }
   // La hora y la posición se fijan al pulsar, antes de procesar la imagen.
   const time = clock.now();
   const gps = currentPosition();
@@ -328,7 +349,9 @@ async function main() {
 
   startOrientation();
   // En iPhone el sensor de orientación solo se activa tras un toque del usuario.
-  document.addEventListener("pointerdown", requestOrientationPermission, { once: true });
+  document.addEventListener("click", () => requestOrientationPermission().then(updateOrientation));
+  $("version").textContent = `v${APP_VERSION}`;
+  setInterval(updateOrientation, 500);
   $("shutter").addEventListener("click", capture);
   $("retryCamera").addEventListener("click", openCamera);
   $("torch").addEventListener("click", async () => {
@@ -384,7 +407,16 @@ async function main() {
   runSync();
 
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("sw.js").catch(() => {});
+    // Cuando hay una versión nueva, el service worker toma el control y la app
+    // se recarga sola (salvo la primera instalación, que no tenía versión previa).
+    const hadController = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (hadController && !capturing) location.reload();
+    });
+    navigator.serviceWorker
+      .register("sw.js")
+      .then((reg) => reg.update())
+      .catch(() => {});
   }
 }
 

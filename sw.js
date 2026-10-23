@@ -1,6 +1,6 @@
 // Guarda la app en el teléfono para que abra sin conexión.
 // Cambiar VERSION en cada publicación para que los teléfonos descarguen la nueva.
-const VERSION = "v0.2.0";
+const VERSION = "v0.3.0";
 const SHELL = [
   "./",
   "index.html",
