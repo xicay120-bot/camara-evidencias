@@ -1,6 +1,6 @@
 // Guarda la app en el teléfono para que abra sin conexión.
 // Cambiar VERSION en cada publicación para que los teléfonos descarguen la nueva.
-const VERSION = "v0.1.0";
+const VERSION = "v0.2.0";
 const SHELL = [
   "./",
   "index.html",
@@ -14,6 +14,7 @@ const SHELL = [
   "js/clock.js",
   "js/db.js",
   "js/geo.js",
+  "js/orientation.js",
   "js/graph.js",
   "js/sync.js",
   "js/watermark.js",

@@ -37,7 +37,11 @@ export async function grabFrame(video) {
   if (track && "ImageCapture" in window) {
     try {
       const blob = await new ImageCapture(track).takePhoto();
-      return await createImageBitmap(blob);
+      const bmp = await createImageBitmap(blob);
+      // Algunos Android devuelven la foto girada respecto a la vista previa:
+      // si no coincide la forma (vertical/horizontal), se usa el fotograma.
+      if (!video.videoWidth || bmp.width > bmp.height === video.videoWidth > video.videoHeight) return bmp;
+      bmp.close();
     } catch {
       // Algunos dispositivos lo anuncian pero fallan: se usa el fotograma.
     }

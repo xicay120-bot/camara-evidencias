@@ -43,19 +43,25 @@ function toBlob(canvas, quality) {
   );
 }
 
-// source: ImageBitmap o canvas. Devuelve { blob, width, height }.
-export async function renderStamped(source, lines, { maxSide, quality }) {
-  const sw = source.width;
-  const sh = source.height;
-  const scale = Math.min(1, maxSide / Math.max(sw, sh));
-  const w = Math.round(sw * scale);
-  const h = Math.round(sh * scale);
+// source: ImageBitmap o canvas. rotation: grados antihorarios (0, 90, 180, 270)
+// para enderezar la imagen antes de estampar. Devuelve { blob, width, height }.
+export async function renderStamped(source, lines, { maxSide, quality }, rotation = 0) {
+  const scale = Math.min(1, maxSide / Math.max(source.width, source.height));
+  const sw = Math.round(source.width * scale);
+  const sh = Math.round(source.height * scale);
+  const sideways = rotation === 90 || rotation === 270;
+  const w = sideways ? sh : sw;
+  const h = sideways ? sw : sh;
 
   const canvas = document.createElement("canvas");
   canvas.width = w;
   canvas.height = h;
   const ctx = canvas.getContext("2d");
-  ctx.drawImage(source, 0, 0, w, h);
+  ctx.save();
+  ctx.translate(w / 2, h / 2);
+  ctx.rotate((-rotation * Math.PI) / 180);
+  ctx.drawImage(source, -sw / 2, -sh / 2, sw, sh);
+  ctx.restore();
 
   const font = Math.max(14, Math.round(Math.min(w, h) * 0.03));
   const lineH = Math.round(font * 1.35);

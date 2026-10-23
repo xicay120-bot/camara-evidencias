@@ -7,8 +7,9 @@ import { putPhoto, listPhotos } from "./db.js";
 import { authEnabled, initAuth, currentUser, login, logout } from "./auth.js";
 import { folderLabel } from "./graph.js";
 import { syncAll } from "./sync.js";
+import { startOrientation, requestOrientationPermission, captureRotation } from "./orientation.js";
 
-const APP_VERSION = "0.1.0";
+const APP_VERSION = "0.2.0";
 const $ = (id) => document.getElementById(id);
 const video = $("viewfinder");
 
@@ -135,6 +136,7 @@ async function capture() {
   // La hora y la posición se fijan al pulsar, antes de procesar la imagen.
   const time = clock.now();
   const gps = currentPosition();
+  const orientation = captureRotation();
   const flash = $("flash");
   flash.classList.add("on");
   requestAnimationFrame(() => requestAnimationFrame(() => flash.classList.remove("on")));
@@ -145,7 +147,7 @@ async function capture() {
     const shortId = id.replace(/-/g, "").slice(0, 8).toUpperCase();
     const user = currentUser();
     const lines = stampLines({ time, gps, user: user?.email, shortId });
-    const { blob, width, height } = await renderStamped(frame, lines, CONFIG);
+    const { blob, width, height } = await renderStamped(frame, lines, CONFIG, orientation.rotation);
     frame.close?.();
 
     const photo = await blob.arrayBuffer();
@@ -182,6 +184,7 @@ async function capture() {
             antiguedad_posicion_s: gps.fixAgeS,
           }
         : null,
+      orientacion: { giro_aplicado_grados: orientation.rotation, fuente: orientation.source },
       dispositivo: { navegador: navigator.userAgent },
       marca_de_agua: lines,
     };
@@ -323,6 +326,9 @@ async function main() {
   updateAccount();
   updateBanner();
 
+  startOrientation();
+  // En iPhone el sensor de orientación solo se activa tras un toque del usuario.
+  document.addEventListener("pointerdown", requestOrientationPermission, { once: true });
   $("shutter").addEventListener("click", capture);
   $("retryCamera").addEventListener("click", openCamera);
   $("torch").addEventListener("click", async () => {
